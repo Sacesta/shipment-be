@@ -5,87 +5,41 @@ const productSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Product name is required'],
     trim: true,
-    maxlength: [100, 'Product name cannot be more than 100 characters']
+    maxlength: [100, 'Product name cannot exceed 100 characters']
   },
   sku: {
     type: String,
     required: [true, 'SKU is required'],
     unique: true,
     trim: true,
-    uppercase: true
-  },
-  description: {
-    type: String,
-    trim: true,
-    maxlength: [500, 'Description cannot be more than 500 characters']
-  },
-  category: {
-    type: String,
-    required: [true, 'Category is required'],
-    trim: true
-  },
-  price: {
-    type: Number,
-    required: [true, 'Price is required'],
-    min: [0, 'Price cannot be negative']
-  },
-  cost: {
-    type: Number,
-    required: [true, 'Cost is required'],
-    min: [0, 'Cost cannot be negative']
-  },
-  quantity: {
-    type: Number,
-    required: [true, 'Quantity is required'],
-    min: [0, 'Quantity cannot be negative'],
-    default: 0
-  },
-  reorderLevel: {
-    type: Number,
-    required: [true, 'Reorder level is required'],
-    min: [0, 'Reorder level cannot be negative'],
-    default: 10
+    uppercase: true,
+    maxlength: [50, 'SKU cannot exceed 50 characters']
   },
   weight: {
     type: Number,
-    min: [0, 'Weight cannot be negative']
+    min: [0, 'Weight cannot be negative'],
+    default: 0
   },
   dimensions: {
-    length: Number,
-    width: Number,
-    height: Number
+    length: { type: Number, min: 0, default: 0 },
+    width: { type: Number, min: 0, default: 0 },
+    height: { type: Number, min: 0, default: 0 }
   },
-  images: [{
-    url: String,
-    alt: String
-  }],
-  status: {
-    type: String,
-    enum: ['active', 'inactive', 'discontinued'],
-    default: 'active'
+  stock: {
+    type: Number,
+    required: [true, 'Stock is required'],
+    min: [0, 'Stock cannot be negative'],
+    default: 0
   },
-  supplier: {
-    name: String,
-    contact: String,
-    email: String
-  },
-  barcode: {
-    type: String,
-    trim: true
-  },
-  tags: [String],
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
-  },
-  notes: {
-    type: String,
-    trim: true
   }
 }, {
   timestamps: true
 });
+
 
 // Generate SKU before saving if not provided
 productSchema.pre('save', async function(next) {
@@ -93,8 +47,15 @@ productSchema.pre('save', async function(next) {
     const count = await mongoose.model('Product').countDocuments();
     this.sku = `PROD${Date.now().toString().slice(-6)}${(count + 1).toString().padStart(3, '0')}`;
   }
+  
+  // Auto-generate barcode if not provided
+  if (!this.barcode && this.sku) {
+    this.barcode = this.sku;
+  }
+  
   next();
 });
+
 
 // Virtual for profit margin
 productSchema.virtual('profitMargin').get(function() {

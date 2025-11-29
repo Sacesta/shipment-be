@@ -1,24 +1,36 @@
 # Shipment Management Backend API
 
-A complete Node.js MongoDB backend system for shipment management with authentication, product tracking, courier management, and dashboard analytics.
+A complete Node.js MongoDB authentication and shipment management system with structured folder organization.
 
 ## Features
 
-- 🔐 **Authentication System** - Register, login, JWT tokens
-- 📦 **Shipment Management** - Create, track, update shipments
-- 📊 **Product Inventory** - Product CRUD with stock management
-- 🚚 **Courier Management** - Courier services with pricing
-- 📈 **Dashboard Analytics** - Statistics and analytics
-- 🔒 **Protected Routes** - JWT-based authentication middleware
-- 📱 **RESTful API** - Clean API structure
+### Authentication System
+- User registration and login
+- JWT-based authentication
+- Password hashing with bcrypt
+- Protected routes with middleware
+- Input validation
 
-## Tech Stack
+### Shipment Management
+- Create, read, update, delete shipments
+- Track shipments by tracking number
+- Courier service integration
+- Order management with products
+- Payment processing (COD/Prepaid)
+- Real-time tracking updates
 
-- **Backend**: Node.js, Express.js
-- **Database**: MongoDB with Mongoose
-- **Authentication**: JWT, bcryptjs
-- **Validation**: Validator
-- **Security**: CORS, environment variables
+### Product Management
+- Product inventory management
+- SKU-based product tracking
+- Stock level management
+- Category organization
+- Supplier information
+
+### Dashboard & Analytics
+- Shipment statistics
+- Revenue tracking
+- Status overview
+- Performance metrics
 
 ## Project Structure
 
@@ -33,27 +45,58 @@ shipment-be/
 │   └── Courier.js           # Courier schema
 ├── controllers/
 │   ├── authController.js     # Authentication logic
-│   ├── shipmentController.js # Shipment CRUD
-│   ├── productController.js  # Product CRUD
-│   ├── courierController.js  # Courier CRUD
-│   └── dashboardController.js # Analytics
+│   ├── shipmentController.js # Shipment CRUD operations
+│   ├── productController.js  # Product management
+│   ├── courierController.js  # Courier services
+│   └── dashboardController.js # Analytics & stats
 ├── routes/
-│   ├── authRoutes.js         # Auth routes
+│   ├── authRoutes.js         # Authentication routes
 │   ├── shipmentRoutes.js     # Shipment routes
 │   ├── productRoutes.js      # Product routes
 │   ├── courierRoutes.js      # Courier routes
 │   └── dashboardRoutes.js    # Dashboard routes
 ├── middleware/
-│   └── authMiddleware.js     # JWT middleware
+│   └── authMiddleware.js     # JWT authentication
 ├── utils/
 │   ├── jwt.js               # JWT utilities
-│   └── validation.js        # Validation helpers
+│   └── validation.js        # Input validation
 ├── server.js                # Main server file
-├── package.json             # Dependencies
-└── .env                     # Environment variables
+└── package.json             # Dependencies
 ```
 
-## Installation
+## API Endpoints
+
+### Authentication
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `GET /api/auth/me` - Get current user
+
+### Shipments
+- `POST /api/shipments` - Create shipment (Protected)
+- `GET /api/shipments` - Get all shipments (Protected)
+- `GET /api/shipments/:id` - Get single shipment (Protected)
+- `PUT /api/shipments/:id` - Update shipment (Protected)
+- `DELETE /api/shipments/:id` - Delete shipment (Protected)
+- `GET /api/shipments/track/:trackingNumber` - Track shipment (Public)
+
+### Products
+- `POST /api/products` - Create product (Protected)
+- `GET /api/products` - Get all products (Protected)
+- `GET /api/products/:id` - Get single product (Protected)
+- `PUT /api/products/:id` - Update product (Protected)
+- `DELETE /api/products/:id` - Delete product (Protected)
+- `PATCH /api/products/:id/quantity` - Update stock quantity (Protected)
+- `GET /api/products/categories` - Get product categories (Protected)
+
+### Dashboard
+- `GET /api/dashboard/stats` - Get dashboard statistics (Protected)
+- `GET /api/dashboard/revenue` - Get revenue analytics (Protected)
+
+### Couriers
+- `GET /api/couriers` - Get available couriers (Protected)
+- `POST /api/couriers` - Create courier service (Protected)
+
+## Installation & Setup
 
 1. **Clone the repository**
    ```bash
@@ -66,143 +109,110 @@ shipment-be/
    npm install
    ```
 
-3. **Set up environment variables**
-   - Copy `.env` file and update with your configuration
-   - Set `MONGODB_URI` to your MongoDB connection string
-   - Set `JWT_SECRET` to a secure random string
+3. **Environment Configuration**
+   Create a `.env` file in the root directory:
+   ```env
+   NODE_ENV=development
+   PORT=5000
+   MONGODB_URI=mongodb://localhost:27017/shipment-db
+   JWT_SECRET=your-super-secret-jwt-key
+   JWT_EXPIRE=30d
+   ```
 
 4. **Start the server**
    ```bash
-   # Development
-   npm run dev
-
-   # Production
    npm start
+   # or for development
+   npm run dev
    ```
 
-## API Endpoints
+## Dependencies
 
-### Authentication
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `GET /api/auth/me` - Get current user
+### Core Dependencies
+- `express` - Web framework
+- `mongoose` - MongoDB ODM
+- `bcryptjs` - Password hashing
+- `jsonwebtoken` - JWT authentication
+- `dotenv` - Environment variables
+- `cors` - Cross-origin requests
+- `validator` - Input validation
 
-### Shipments
-- `GET /api/shipments` - Get all shipments (with pagination/filters)
-- `POST /api/shipments` - Create new shipment
-- `GET /api/shipments/:id` - Get single shipment
-- `PUT /api/shipments/:id` - Update shipment
-- `DELETE /api/shipments/:id` - Delete shipment
-- `GET /api/shipments/track/:trackingNumber` - Track shipment (public)
+### Development Dependencies
+- `nodemon` - Auto-restart server during development
 
-### Products
-- `GET /api/products` - Get all products
-- `POST /api/products` - Create new product
-- `GET /api/products/:id` - Get single product
-- `PUT /api/products/:id` - Update product
-- `DELETE /api/products/:id` - Delete product
-- `PATCH /api/products/:id/quantity` - Update product quantity
-- `GET /api/products/categories` - Get product categories
+## Authentication Flow
 
-### Couriers
-- `GET /api/couriers` - Get all couriers
-- `POST /api/couriers` - Create new courier
-- `GET /api/couriers/:id` - Get single courier
-- `PUT /api/couriers/:id` - Update courier
-- `DELETE /api/couriers/:id` - Delete courier
-- `GET /api/couriers/active` - Get active couriers
-- `POST /api/couriers/calculate-shipping` - Calculate shipping cost
+1. **Registration**: User provides email and password
+2. **Password Hashing**: Password is hashed using bcrypt
+3. **JWT Generation**: Token generated upon successful login
+4. **Protected Routes**: JWT token required in Authorization header
+5. **Token Validation**: Middleware validates token for protected routes
 
-### Dashboard
-- `GET /api/dashboard/stats` - Get dashboard statistics
-- `GET /api/dashboard/analytics/shipments` - Get shipment analytics
-- `GET /api/dashboard/analytics/products` - Get product analytics
+## Shipment Creation Flow
 
-## Authentication
+1. **Customer Information**: Sender and receiver details
+2. **Product Selection**: Order items with quantities
+3. **Courier Selection**: Service provider with cost and delivery details
+4. **Payment Mode**: COD or Prepaid payment
+5. **Package Details**: Weight, dimensions, and special instructions
+6. **Tracking**: Automatic tracking number generation
 
-All protected routes require a JWT token in the Authorization header:
-```
-Authorization: Bearer <jwt_token>
-```
+## Testing
 
-## Request/Response Examples
+Test files are available for different components:
+- `test-auth.js` - Authentication testing
+- `test-api.js` - Shipment API testing
+- `test-product-api.js` - Product API testing
 
-### User Registration
-```json
-POST /api/auth/register
-{
-  "name": "John Doe",
-  "email": "john@example.com",
-  "password": "password123"
-}
-
-Response:
-{
-  "success": true,
-  "message": "User registered successfully",
-  "data": {
-    "user": {
-      "id": "...",
-      "name": "John Doe",
-      "email": "john@example.com"
-    },
-    "token": "jwt_token_here"
-  }
-}
+Run tests using:
+```bash
+node test-auth.js
+node test-api.js
+node test-product-api.js
 ```
 
-### Create Shipment
-```json
-POST /api/shipments
-{
-  "sender": {
-    "name": "John Doe",
-    "email": "john@example.com",
-    "phone": "+1234567890",
-    "address": "123 Main St, City, Country"
-  },
-  "receiver": {
-    "name": "Jane Smith",
-    "email": "jane@example.com",
-    "phone": "+0987654321",
-    "address": "456 Oak St, City, Country"
-  },
-  "package": {
-    "description": "Electronics",
-    "weight": 2.5,
-    "dimensions": "30x20x10",
-    "value": 500
-  },
-  "courier": "courier_id_here",
-  "estimatedDelivery": "2024-01-15",
-  "shippingCost": 25.50
-}
-```
+## Security Features
 
-## Environment Variables
+- Password hashing with bcrypt
+- JWT token authentication
+- Input validation and sanitization
+- CORS configuration
+- Environment variable protection
+- Error handling middleware
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `NODE_ENV` | Environment mode | `development` |
-| `PORT` | Server port | `5000` |
-| `MONGODB_URI` | MongoDB connection string | - |
-| `JWT_SECRET` | JWT secret key | - |
-| `JWT_EXPIRE` | JWT expiration time | `30d` |
-| `CLIENT_URL` | Frontend URL | `http://localhost:5173` |
+## Database Models
 
-## Development
+### User Model
+- Email, password, name
+- Role-based access (future enhancement)
+- Timestamps for creation and updates
 
-- Use `npm run dev` for development with auto-restart
-- API documentation available at the root endpoint
-- All routes follow RESTful conventions
-- Error handling with consistent response format
+### Shipment Model
+- Customer information (sender/receiver)
+- Order items with product references
+- Courier service details
+- Payment information
+- Tracking history and status
+- Package details and dimensions
 
-## Production
+### Product Model
+- SKU, name, description
+- Pricing and cost information
+- Stock management
+- Category and supplier details
 
-- Set `NODE_ENV=production`
-- Use environment variables for sensitive data
-- Enable proper CORS configuration
-- Use a process manager like PM2
+### Courier Model
+- Service provider information
+- Pricing and delivery areas
+- Service capabilities
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
 ## License
 

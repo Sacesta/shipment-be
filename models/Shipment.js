@@ -3,85 +3,35 @@ const mongoose = require('mongoose');
 const shipmentSchema = new mongoose.Schema({
   trackingNumber: {
     type: String,
-    required: [true, 'Tracking number is required'],
     unique: true,
     trim: true
   },
-  sender: {
-    name: {
-      type: String,
-      required: [true, 'Sender name is required'],
-      trim: true
-    },
-    email: {
-      type: String,
-      required: [true, 'Sender email is required'],
-      trim: true,
-      lowercase: true
-    },
-    phone: {
-      type: String,
-      required: [true, 'Sender phone is required'],
-      trim: true
-    },
-    address: {
-      street: String,
-      city: String,
-      state: String,
-      zipCode: String,
-      country: String
-    }
+  customer: {
+    type: Object,
+    required: true
   },
-  receiver: {
-    name: {
-      type: String,
-      required: [true, 'Receiver name is required'],
-      trim: true
+  items: [{
+    productId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true
     },
-    email: {
-      type: String,
-      required: [true, 'Receiver email is required'],
-      trim: true,
-      lowercase: true
-    },
-    phone: {
-      type: String,
-      required: [true, 'Receiver phone is required'],
-      trim: true
-    },
-    address: {
-      street: String,
-      city: String,
-      state: String,
-      zipCode: String,
-      country: String
+    quantity: {
+      type: Number,
+      required: true,
+      min: [1, 'Quantity must be at least 1']
     }
-  },
+  }],
   package: {
-    description: {
-      type: String,
-      required: [true, 'Package description is required'],
-      trim: true
-    },
-    weight: {
-      type: Number,
-      required: [true, 'Package weight is required'],
-      min: [0.1, 'Weight must be at least 0.1 kg']
-    },
-    dimensions: {
-      length: Number,
-      width: Number,
-      height: Number
-    },
-    value: {
-      type: Number,
-      min: [0, 'Value cannot be negative']
-    }
+    type: Object,
+    required: true
+  },
+  payment: {
+    type: Object,
+    required: true
   },
   courier: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Courier',
-    required: [true, 'Courier is required']
+    type: Object,
+    required: true
   },
   status: {
     type: String,
@@ -91,12 +41,8 @@ const shipmentSchema = new mongoose.Schema({
   estimatedDelivery: {
     type: Date
   },
-  actualDelivery: {
-    type: Date
-  },
   shippingCost: {
     type: Number,
-    required: [true, 'Shipping cost is required'],
     min: [0, 'Shipping cost cannot be negative']
   },
   trackingHistory: [{
@@ -121,8 +67,11 @@ const shipmentSchema = new mongoose.Schema({
     trim: true
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
+
 
 // Generate tracking number before saving
 shipmentSchema.pre('save', async function(next) {
@@ -144,5 +93,6 @@ shipmentSchema.pre('save', function(next) {
   }
   next();
 });
+
 
 module.exports = mongoose.model('Shipment', shipmentSchema);

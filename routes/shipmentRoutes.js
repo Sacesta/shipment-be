@@ -10,10 +10,10 @@ const {
 } = require('../controllers/shipmentController');
 const { protect } = require('../middleware/authMiddleware');
 
-// Public route (no authentication required)
+// Public routes
 router.get('/track/:trackingNumber', trackShipment);
 
-// Protected routes (authentication required)
+// Protected routes (require authentication)
 router.use(protect);
 
 router.route('/')

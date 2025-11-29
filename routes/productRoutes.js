@@ -6,9 +6,9 @@ const {
   getProduct,
   updateProduct,
   deleteProduct,
-  updateProductQuantity,
-  getProductCategories
+  updateProductStock
 } = require('../controllers/productController');
+
 const { protect } = require('../middleware/authMiddleware');
 
 // Apply authentication middleware to all routes
@@ -18,15 +18,13 @@ router.route('/')
   .post(createProduct)
   .get(getProducts);
 
-router.route('/categories')
-  .get(getProductCategories);
-
 router.route('/:id')
   .get(getProduct)
   .put(updateProduct)
   .delete(deleteProduct);
 
-router.route('/:id/quantity')
-  .patch(updateProductQuantity);
+router.route('/:id/stock')
+  .patch(updateProductStock);
+
 
 module.exports = router;

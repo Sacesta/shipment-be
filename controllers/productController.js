@@ -8,39 +8,20 @@ const createProduct = async (req, res) => {
     const {
       name,
       sku,
-      description,
-      category,
-      price,
-      cost,
-      quantity,
-      reorderLevel,
       weight,
       dimensions,
-      images,
-      supplier,
-      barcode,
-      tags,
-      notes
+      stock
     } = req.body;
 
     const product = await Product.create({
       name,
       sku,
-      description,
-      category,
-      price,
-      cost,
-      quantity,
-      reorderLevel,
       weight,
       dimensions,
-      images,
-      supplier,
-      barcode,
-      tags,
-      notes,
+      stock,
       createdBy: req.user.id
     });
+
 
     res.status(201).json({
       success: true,
@@ -55,6 +36,14 @@ const createProduct = async (req, res) => {
         message: 'SKU already exists'
       });
     }
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors: messages
+      });
+    }
     res.status(500).json({
       success: false,
       message: 'Server error during product creation',
@@ -62,6 +51,7 @@ const createProduct = async (req, res) => {
     });
   }
 };
+
 
 // @desc    Get all products
 // @route   GET /api/products
@@ -90,14 +80,14 @@ const getProducts = async (req, res) => {
       query.status = status;
     }
 
-    // Search by name, SKU, or description
+    // Search by name or SKU
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
-        { sku: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
+        { sku: { $regex: search, $options: 'i' } }
       ];
     }
+
 
     const sortOptions = {};
     sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
@@ -172,6 +162,17 @@ const updateProduct = async (req, res) => {
       });
     }
 
+    // Validate dimensions if provided
+    if (req.body.dimensions) {
+      const { length, width, height } = req.body.dimensions;
+      if ((length && length < 0) || (width && width < 0) || (height && height < 0)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Dimensions cannot be negative'
+        });
+      }
+    }
+
     product = await Product.findByIdAndUpdate(
       req.params.id,
       req.body,
@@ -194,6 +195,14 @@ const updateProduct = async (req, res) => {
         message: 'SKU already exists'
       });
     }
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors: messages
+      });
+    }
     res.status(500).json({
       success: false,
       message: 'Server error while updating product',
@@ -201,6 +210,7 @@ const updateProduct = async (req, res) => {
     });
   }
 };
+
 
 // @desc    Delete product
 // @route   DELETE /api/products/:id
@@ -232,17 +242,17 @@ const deleteProduct = async (req, res) => {
   }
 };
 
-// @desc    Update product quantity (for inventory management)
-// @route   PATCH /api/products/:id/quantity
+// @desc    Update product stock (for inventory management)
+// @route   PATCH /api/products/:id/stock
 // @access  Private
-const updateProductQuantity = async (req, res) => {
+const updateProductStock = async (req, res) => {
   try {
-    const { quantity, operation = 'set' } = req.body;
+    const { stock, operation = 'set' } = req.body;
 
-    if (typeof quantity !== 'number' || quantity < 0) {
+    if (typeof stock !== 'number' || stock < 0) {
       return res.status(400).json({
         success: false,
-        message: 'Quantity must be a non-negative number'
+        message: 'Stock must be a non-negative number'
       });
     }
 
@@ -255,14 +265,14 @@ const updateProductQuantity = async (req, res) => {
       });
     }
 
-    let newQuantity;
+    let newStock;
     switch (operation) {
       case 'add':
-        newQuantity = product.quantity + quantity;
+        newStock = product.stock + stock;
         break;
       case 'subtract':
-        newQuantity = product.quantity - quantity;
-        if (newQuantity < 0) {
+        newStock = product.stock - stock;
+        if (newStock < 0) {
           return res.status(400).json({
             success: false,
             message: 'Insufficient stock'
@@ -271,58 +281,35 @@ const updateProductQuantity = async (req, res) => {
         break;
       case 'set':
       default:
-        newQuantity = quantity;
+        newStock = stock;
         break;
     }
 
     product = await Product.findByIdAndUpdate(
       req.params.id,
-      { quantity: newQuantity },
+      { stock: newStock },
       { new: true, runValidators: true }
     );
 
     res.json({
       success: true,
-      message: 'Product quantity updated successfully',
+      message: 'Product stock updated successfully',
       data: product
     });
   } catch (error) {
-    console.error('Update product quantity error:', error);
+    console.error('Update product stock error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error while updating product quantity',
+      message: 'Server error while updating product stock',
       error: error.message
     });
   }
 };
-
-// @desc    Get product categories
-// @route   GET /api/products/categories
-// @access  Private
-const getProductCategories = async (req, res) => {
-  try {
-    const categories = await Product.distinct('category');
-    
-    res.json({
-      success: true,
-      data: categories
-    });
-  } catch (error) {
-    console.error('Get product categories error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while fetching categories',
-      error: error.message
-    });
-  }
-};
-
 module.exports = {
   createProduct,
   getProducts,
   getProduct,
   updateProduct,
   deleteProduct,
-  updateProductQuantity,
-  getProductCategories
+  updateProductStock
 };

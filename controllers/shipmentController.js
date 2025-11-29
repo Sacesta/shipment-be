@@ -1,34 +1,26 @@
 const Shipment = require('../models/Shipment');
-const Courier = require('../models/Courier');
 
-// @desc    Create a new shipment
+// @desc    Create a new shipment with simplified structure
 // @route   POST /api/shipments
 // @access  Private
 const createShipment = async (req, res) => {
   try {
     const {
-      sender,
-      receiver,
+      customer,
+      items,
       package,
+      payment,
       courier,
       estimatedDelivery,
       shippingCost,
       notes
     } = req.body;
 
-    // Verify courier exists
-    const courierExists = await Courier.findById(courier);
-    if (!courierExists) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid courier selected'
-      });
-    }
-
     const shipment = await Shipment.create({
-      sender,
-      receiver,
+      customer,
+      items,
       package,
+      payment,
       courier,
       estimatedDelivery,
       shippingCost,
@@ -51,7 +43,9 @@ const createShipment = async (req, res) => {
   }
 };
 
-// @desc    Get all shipments
+
+
+// @desc    Get all shipments with enhanced filtering
 // @route   GET /api/shipments
 // @access  Private
 const getShipments = async (req, res) => {
@@ -72,12 +66,11 @@ const getShipments = async (req, res) => {
       query.status = status;
     }
 
-    // Search by tracking number or sender/receiver name
+    // Search by tracking number or customer name
     if (search) {
       query.$or = [
         { trackingNumber: { $regex: search, $options: 'i' } },
-        { 'sender.name': { $regex: search, $options: 'i' } },
-        { 'receiver.name': { $regex: search, $options: 'i' } }
+        { 'customer.name': { $regex: search, $options: 'i' } }
       ];
     }
 
@@ -85,7 +78,6 @@ const getShipments = async (req, res) => {
     sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
     const shipments = await Shipment.find(query)
-      .populate('courier', 'name code')
       .populate('createdBy', 'name email')
       .sort(sortOptions)
       .limit(limit * 1)
@@ -112,13 +104,14 @@ const getShipments = async (req, res) => {
   }
 };
 
-// @desc    Get single shipment
+
+
+// @desc    Get single shipment with full details
 // @route   GET /api/shipments/:id
 // @access  Private
 const getShipment = async (req, res) => {
   try {
     const shipment = await Shipment.findById(req.params.id)
-      .populate('courier')
       .populate('createdBy', 'name email');
 
     if (!shipment) {
@@ -142,22 +135,12 @@ const getShipment = async (req, res) => {
   }
 };
 
-// @desc    Update shipment
+
+// @desc    Update shipment with enhanced fields
 // @route   PUT /api/shipments/:id
 // @access  Private
 const updateShipment = async (req, res) => {
   try {
-    const {
-      sender,
-      receiver,
-      package,
-      courier,
-      status,
-      estimatedDelivery,
-      shippingCost,
-      notes
-    } = req.body;
-
     let shipment = await Shipment.findById(req.params.id);
 
     if (!shipment) {
@@ -168,17 +151,24 @@ const updateShipment = async (req, res) => {
     }
 
     // If status is changing, add to tracking history
-    if (status && status !== shipment.status) {
+    if (req.body.status && req.body.status !== shipment.status) {
       const trackingUpdate = {
-        status: status,
+        status: req.body.status,
         location: 'In transit',
-        description: `Status updated to ${status}`
+        description: `Status updated to ${req.body.status}`,
+        timestamp: new Date()
       };
 
-      if (status === 'delivered') {
+      if (req.body.status === 'delivered') {
         trackingUpdate.location = 'Destination';
         trackingUpdate.description = 'Package delivered successfully';
         req.body.actualDelivery = new Date();
+      } else if (req.body.status === 'picked_up') {
+        trackingUpdate.location = 'Origin';
+        trackingUpdate.description = 'Package picked up by courier';
+      } else if (req.body.status === 'out_for_delivery') {
+        trackingUpdate.location = 'Local Facility';
+        trackingUpdate.description = 'Package out for delivery';
       }
 
       req.body.trackingHistory = [
@@ -194,7 +184,9 @@ const updateShipment = async (req, res) => {
         new: true,
         runValidators: true
       }
-    ).populate('courier').populate('createdBy', 'name email');
+    )
+    .populate('createdBy', 'name email');
+
 
     res.json({
       success: true,
@@ -248,7 +240,7 @@ const trackShipment = async (req, res) => {
   try {
     const shipment = await Shipment.findOne({ 
       trackingNumber: req.params.trackingNumber 
-    }).populate('courier', 'name trackingUrl');
+    });
 
     if (!shipment) {
       return res.status(404).json({
@@ -270,6 +262,7 @@ const trackShipment = async (req, res) => {
     });
   }
 };
+
 
 module.exports = {
   createShipment,
